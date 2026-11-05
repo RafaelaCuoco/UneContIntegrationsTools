@@ -1,6 +1,6 @@
 # UneCont Integration Tools
 
-Ferramenta desktop em **Windows Forms (.NET 10 / C#)** desenvolvida para auxiliar a equipe de integração e engenharia na resolução rápida, segura e padronizada de tickets.
+Ferramenta desktop em **Windows Forms (.NET 10 / C#)** desenvolvida para auxiliar a equipe de integração e engenharia na resolução rápida, segura e padronizada de tickets. 
 
 O sistema é **estritamente modular**:
 - **Barra Superior (`MainForm`)**: Contém a navegação para a tela inicial (`⊞ Tela Inicial (Funcionalidades)`) e o botão dedicado de configuração de banco de dados (`⚙ Conexão SQL / Entra ID`), mantendo a configuração de infraestrutura fora da grade de cenários.
@@ -14,7 +14,7 @@ O sistema é **estritamente modular**:
 Toda implementação ou manutenção neste repositório deve respeitar as seguintes diretrizes:
 
 1. **C# e .NET 10**: Utilize recursos modernos da linguagem (Primary Constructors, Records, Pattern Matching, Collection Expressions, Nullable Reference Types habilitados).
-2. **Injeção de Dependência Nativa**: Todo acoplamento de serviços, validadores, presenters e telas deve ser registrado via `Microsoft.Extensions.DependencyInjection` em [`ServiceCollectionExtensions.cs`](Infrastructure/DependencyInjection/ServiceCollectionExtensions.cs).
+2. **Injeção de Dependência Nativa**: Todo acoplamento de serviços, validadores, presenters e telas deve ser registrado via `Microsoft.Extensions.DependencyInjection` em [`ServiceCollectionExtensions.cs`](UneContIntegrationsTools/Infrastructure/DependencyInjection/ServiceCollectionExtensions.cs).
 3. **Padrão MVP (Model-View-Presenter)**: A interface gráfica (`UserControl` / `Form`) implementa apenas uma interface de View (ex.: `IMeuCenarioView`) e delega toda orquestração, validação e chamadas de negócio para um `Presenter`.
 4. **Componentização com `UserControl`**: Cada cenário funcional deve possuir seu próprio `UserControl` independente e reutilizável. **Nota importante (.NET 10 WinForms):** Propriedades públicas *read/write* em `UserControl` devem ser decoradas com `[DesignerSerializationVisibility(DesignerSerializationVisibility.Hidden)]` para evitar o erro `WFO1000`.
 5. **Validação com FluentValidation**: Toda entrada de dados do usuário deve ser representada por um DTO/Model e validada através de uma classe que herda de `AbstractValidator<T>`.
@@ -50,7 +50,7 @@ UneContIntegrationsTools/
 
 ## 3. Acesso ao Banco de Dados (SQL Server & Microsoft Entra ID)
 
-O acesso ao banco de dados é centralizado no serviço [`ISqlConnectionFactory`](Core/Interfaces/ISqlConnectionFactory.cs), que suporta:
+O acesso ao banco de dados é centralizado no serviço [`ISqlConnectionFactory`](UneContIntegrationsTools/Core/Interfaces/ISqlConnectionFactory.cs), que suporta:
 
 - **SQL Server (Usuário e Senha)** (`SqlAuthenticationMode.SqlServerPassword`)
 - **Microsoft Entra ID - Interativo / MFA** (`SqlAuthenticationMode.MicrosoftEntraInteractive`)
@@ -137,7 +137,7 @@ public sealed class ReprocessarNotaModule(IServiceProvider serviceProvider) : IF
 ```
 
 ### Passo 5: Registrar no Container de Injeção de Dependência
-Registre o Validador, o Serviço, o `UserControl` e o `IFeatureModule` em [`ServiceCollectionExtensions.cs`](Infrastructure/DependencyInjection/ServiceCollectionExtensions.cs):
+Registre o Validador, o Serviço, o `UserControl` e o `IFeatureModule` em [`ServiceCollectionExtensions.cs`](UneContIntegrationsTools/Infrastructure/DependencyInjection/ServiceCollectionExtensions.cs):
 
 ```csharp
 services.AddSingleton<IValidator<ReprocessarNotaDto>, ReprocessarNotaValidator>();
@@ -153,9 +153,9 @@ Ao registrar `IFeatureModule`, o botão do novo cenário aparecerá **automatica
 ## 5. Funcionalidades Implementadas
 
 ### 5.1. Módulo `Integrações` (`Features/Integracoes/`)
-- **Botão na Tela Inicial**: `Integrações` ([`IntegracoesModule`](Features/Integracoes/IntegracoesModule.cs)).
-- **Subtela `Integrações` ([`IntegracoesHubControl`](Features/Integracoes/IntegracoesHubControl.cs))**: Central que agrupa os botões de ferramentas de integração.
-  - **Botão `Fila de integração` ([`FilaIntegracaoControl`](Features/Integracoes/FilaIntegracaoControl.cs))**:
+- **Botão na Tela Inicial**: `Integrações` ([`IntegracoesModule`](UneContIntegrationsTools/Features/Integracoes/IntegracoesModule.cs)).
+- **Subtela `Integrações` ([`IntegracoesHubControl`](UneContIntegrationsTools/Features/Integracoes/IntegracoesHubControl.cs))**: Central que agrupa os botões de ferramentas de integração.
+  - **Botão `Fila de integração` ([`FilaIntegracaoControl`](UneContIntegrationsTools/Features/Integracoes/FilaIntegracaoControl.cs))**:
     - Consulta e exibe a listagem agrupada de sistemas de integração (`INTEGRACAO`) e quantidade de notas na fila (`QTDE_NOTAS`) ordenadas de forma decrescente.
     - Permite filtrar por `Nº Tentativa Mínimo` (`FILA.NumeroTentativa >= @NumeroTentativaMinimo`, padrão `0`) e busca rápida por nome da integração.
     - Exibe KPIs no topo (Total de Sistemas na Fila, Total de Notas e Horário/Tempo da Consulta).
@@ -168,5 +168,6 @@ Na raiz do repositório, execute:
 
 ```powershell
 dotnet build UneContIntegrationsTools.slnx
-dotnet run --project UneContIntegrationsTools.csproj
+dotnet run --project UneContIntegrationsTools/UneContIntegrationsTools.csproj
 ```
+
