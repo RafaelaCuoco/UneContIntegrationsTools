@@ -17,6 +17,34 @@ public sealed class SqlConnectionFactory(
     private readonly Lock _syncLock = new();
     private SqlConnectionSettingsDto? _currentSettings;
 
+    static SqlConnectionFactory()
+    {
+        EnsureEntraAuthenticationProvidersRegistered();
+    }
+
+    private static void EnsureEntraAuthenticationProvidersRegistered()
+    {
+#pragma warning disable CS0618
+        ReadOnlySpan<SqlAuthenticationMethod> entraMethods =
+        [
+            SqlAuthenticationMethod.ActiveDirectoryDefault,
+            SqlAuthenticationMethod.ActiveDirectoryInteractive,
+            SqlAuthenticationMethod.ActiveDirectoryPassword
+        ];
+#pragma warning restore CS0618
+
+        ActiveDirectoryAuthenticationProvider? provider = null;
+
+        foreach (var method in entraMethods)
+        {
+            if (SqlAuthenticationProvider.GetProvider(method) is null)
+            {
+                provider ??= new ActiveDirectoryAuthenticationProvider();
+                SqlAuthenticationProvider.SetProvider(method, provider);
+            }
+        }
+    }
+
     public event EventHandler<SqlConnectionSettingsDto?>? ActiveSettingsChanged;
 
     public SqlConnectionSettingsDto? CurrentSettings
