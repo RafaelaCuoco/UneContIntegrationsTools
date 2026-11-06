@@ -87,7 +87,7 @@ partial class IntegracoesHubControl
 
         var lblBadge = new Label
         {
-            Text = "MONITORAMENTO NFE / SERVIÇO TOMADO",
+            Text = "MONITORAMENTO NFE / TOMADOS E PRESTADOS",
             Font = new Font("Segoe UI Semibold", 8F, FontStyle.Bold, GraphicsUnit.Point),
             ForeColor = Color.FromArgb(37, 99, 235),
             AutoSize = true,

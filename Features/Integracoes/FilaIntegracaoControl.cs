@@ -8,10 +8,42 @@ namespace UneContIntegrationsTools.Features.Integracoes;
 /// </summary>
 public partial class FilaIntegracaoControl : UserControl, IFilaIntegracaoView
 {
+    private sealed record TipoServicoOption(TipoServicoFilaIntegracao Tipo, string DisplayText);
+
+    private bool _suppressSelectionRefresh;
+
     public FilaIntegracaoControl()
     {
         InitializeComponent();
+        InitializeTipoServicoOptions();
         WireEvents();
+    }
+
+    [DesignerSerializationVisibility(DesignerSerializationVisibility.Hidden)]
+    public TipoServicoFilaIntegracao TipoServico
+    {
+        get => (_cmbTipoServico.SelectedItem as TipoServicoOption)?.Tipo ?? TipoServicoFilaIntegracao.ServicoTomado;
+        set
+        {
+            _suppressSelectionRefresh = true;
+            try
+            {
+                for (var i = 0; i < _cmbTipoServico.Items.Count; i++)
+                {
+                    if (_cmbTipoServico.Items[i] is TipoServicoOption option && option.Tipo == value)
+                    {
+                        _cmbTipoServico.SelectedIndex = i;
+                        break;
+                    }
+                }
+
+                UpdateSubtitle(value);
+            }
+            finally
+            {
+                _suppressSelectionRefresh = false;
+            }
+        }
     }
 
     [DesignerSerializationVisibility(DesignerSerializationVisibility.Hidden)]
@@ -32,6 +64,35 @@ public partial class FilaIntegracaoControl : UserControl, IFilaIntegracaoView
     public event Func<Task>? RefreshRequested;
     public event EventHandler? BackRequested;
 
+    private void InitializeTipoServicoOptions()
+    {
+        _suppressSelectionRefresh = true;
+        try
+        {
+            _cmbTipoServico.Items.AddRange(
+            [
+                new TipoServicoOption(TipoServicoFilaIntegracao.ServicoTomado, "Serviços Tomados"),
+                new TipoServicoOption(TipoServicoFilaIntegracao.ServicoPrestado, "Serviços Prestados")
+            ]);
+            _cmbTipoServico.DisplayMember = nameof(TipoServicoOption.DisplayText);
+            _cmbTipoServico.SelectedIndex = 0;
+            UpdateSubtitle(TipoServicoFilaIntegracao.ServicoTomado);
+        }
+        finally
+        {
+            _suppressSelectionRefresh = false;
+        }
+    }
+
+    private void UpdateSubtitle(TipoServicoFilaIntegracao tipoServico)
+    {
+        var label = tipoServico == TipoServicoFilaIntegracao.ServicoPrestado
+            ? "Serviços Prestados"
+            : "Serviços Tomados";
+
+        _lblSubtitle.Text = $"Quantidade de notas fiscais ({label}) aguardando processamento por Sistema de Integração.";
+    }
+
     private void WireEvents()
     {
         Load += async (_, _) =>
@@ -39,6 +100,15 @@ public partial class FilaIntegracaoControl : UserControl, IFilaIntegracaoView
             if (LoadRequested is not null)
             {
                 await LoadRequested.Invoke();
+            }
+        };
+
+        _cmbTipoServico.SelectedIndexChanged += async (_, _) =>
+        {
+            UpdateSubtitle(TipoServico);
+            if (!_suppressSelectionRefresh && IsHandleCreated && RefreshRequested is not null)
+            {
+                await RefreshRequested.Invoke();
             }
         };
 
@@ -65,6 +135,7 @@ public partial class FilaIntegracaoControl : UserControl, IFilaIntegracaoView
     public void SetBusyState(bool isBusy, string? statusMessage = null)
     {
         UseWaitCursor = isBusy;
+        _cmbTipoServico.Enabled = !isBusy;
         _btnRefresh.Enabled = !isBusy;
         _numMinAttempts.Enabled = !isBusy;
         _txtSearch.Enabled = !isBusy;
@@ -90,6 +161,7 @@ public partial class FilaIntegracaoControl : UserControl, IFilaIntegracaoView
 
     public void DisplayResult(FilaIntegracaoResumoDto resumo)
     {
+        UpdateSubtitle(resumo.TipoServico);
         _dgvFila.DataSource = resumo.Itens;
         _lblTotalSistemasValue.Text = resumo.TotalSistemas.ToString("N0");
         _lblTotalNotasValue.Text = resumo.TotalNotas.ToString("N0");

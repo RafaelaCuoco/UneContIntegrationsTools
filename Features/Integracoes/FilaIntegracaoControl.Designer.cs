@@ -9,6 +9,8 @@ partial class FilaIntegracaoControl
     private Label _lblTitle = null!;
     private Label _lblSubtitle = null!;
     private Panel _filterBarPanel = null!;
+    private Label _lblTipoServico = null!;
+    private ComboBox _cmbTipoServico = null!;
     private Label _lblMinAttempts = null!;
     private NumericUpDown _numMinAttempts = null!;
     private Label _lblSearch = null!;
@@ -79,7 +81,7 @@ partial class FilaIntegracaoControl
 
         _lblSubtitle = new Label
         {
-            Text = "Quantidade de notas fiscais (Serviço Tomado) aguardando processamento por Sistema de Integração.",
+            Text = "Quantidade de notas fiscais (Serviços Tomados) aguardando processamento por Sistema de Integração.",
             Font = new Font("Segoe UI", 9.5F, FontStyle.Regular, GraphicsUnit.Point),
             ForeColor = Color.FromArgb(100, 116, 139),
             AutoSize = true,
@@ -99,13 +101,29 @@ partial class FilaIntegracaoControl
             Padding = new Padding(16, 10, 16, 10)
         };
 
+        _lblTipoServico = new Label
+        {
+            Text = "Tipo de Serviço:",
+            Font = new Font("Segoe UI Semibold", 9F, FontStyle.Bold, GraphicsUnit.Point),
+            ForeColor = Color.FromArgb(51, 65, 85),
+            AutoSize = true,
+            Location = new Point(16, 17)
+        };
+
+        _cmbTipoServico = new ComboBox
+        {
+            DropDownStyle = ComboBoxStyle.DropDownList,
+            Width = 170,
+            Location = new Point(124, 14)
+        };
+
         _lblMinAttempts = new Label
         {
             Text = "Nº Tentativa Mínimo (>=):",
             Font = new Font("Segoe UI Semibold", 9F, FontStyle.Bold, GraphicsUnit.Point),
             ForeColor = Color.FromArgb(51, 65, 85),
             AutoSize = true,
-            Location = new Point(16, 17)
+            Location = new Point(312, 17)
         };
 
         _numMinAttempts = new NumericUpDown
@@ -113,8 +131,8 @@ partial class FilaIntegracaoControl
             Minimum = 0,
             Maximum = 9999,
             Value = 0,
-            Width = 80,
-            Location = new Point(182, 14)
+            Width = 75,
+            Location = new Point(478, 14)
         };
 
         _lblSearch = new Label
@@ -123,21 +141,21 @@ partial class FilaIntegracaoControl
             Font = new Font("Segoe UI Semibold", 9F, FontStyle.Bold, GraphicsUnit.Point),
             ForeColor = Color.FromArgb(51, 65, 85),
             AutoSize = true,
-            Location = new Point(284, 17)
+            Location = new Point(572, 17)
         };
 
         _txtSearch = new TextBox
         {
-            Width = 240,
+            Width = 220,
             PlaceholderText = "Ex.: Omie, Dominio, UneCont...",
-            Location = new Point(402, 14)
+            Location = new Point(690, 14)
         };
 
         _btnRefresh = new Button
         {
             Text = "↻ Atualizar Fila",
-            Size = new Size(160, 32),
-            Location = new Point(660, 11),
+            Size = new Size(155, 32),
+            Location = new Point(926, 11),
             FlatStyle = FlatStyle.Flat,
             BackColor = Color.FromArgb(37, 99, 235),
             ForeColor = Color.White,
@@ -146,6 +164,8 @@ partial class FilaIntegracaoControl
         };
         _btnRefresh.FlatAppearance.BorderSize = 0;
 
+        _filterBarPanel.Controls.Add(_lblTipoServico);
+        _filterBarPanel.Controls.Add(_cmbTipoServico);
         _filterBarPanel.Controls.Add(_lblMinAttempts);
         _filterBarPanel.Controls.Add(_numMinAttempts);
         _filterBarPanel.Controls.Add(_lblSearch);

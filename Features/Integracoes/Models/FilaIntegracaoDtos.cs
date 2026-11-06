@@ -1,9 +1,19 @@
 namespace UneContIntegrationsTools.Features.Integracoes.Models;
 
 /// <summary>
+/// Tipo de serviço fiscal consultado na Fila de Integração.
+/// </summary>
+public enum TipoServicoFilaIntegracao
+{
+    ServicoTomado = 0,
+    ServicoPrestado = 1
+}
+
+/// <summary>
 /// Parâmetros de filtro para consulta da Fila de Integração.
 /// </summary>
 public sealed record FilaIntegracaoFiltroDto(
+    TipoServicoFilaIntegracao TipoServico = TipoServicoFilaIntegracao.ServicoTomado,
     int NumeroTentativaMinimo = 0,
     string? BuscaIntegracao = null);
 
@@ -18,6 +28,7 @@ public sealed record FilaIntegracaoItemDto(
 /// Resultado consolidado da consulta da Fila de Integração.
 /// </summary>
 public sealed record FilaIntegracaoResumoDto(
+    TipoServicoFilaIntegracao TipoServico,
     IReadOnlyList<FilaIntegracaoItemDto> Itens,
     int TotalSistemas,
     long TotalNotas,

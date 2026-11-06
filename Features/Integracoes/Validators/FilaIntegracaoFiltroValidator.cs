@@ -10,6 +10,10 @@ public sealed class FilaIntegracaoFiltroValidator : AbstractValidator<FilaIntegr
 {
     public FilaIntegracaoFiltroValidator()
     {
+        RuleFor(x => x.TipoServico)
+            .IsInEnum()
+            .WithMessage("O tipo de serviço selecionado é inválido.");
+
         RuleFor(x => x.NumeroTentativaMinimo)
             .GreaterThanOrEqualTo(0)
             .WithMessage("O número mínimo de tentativas deve ser maior ou igual a zero.");

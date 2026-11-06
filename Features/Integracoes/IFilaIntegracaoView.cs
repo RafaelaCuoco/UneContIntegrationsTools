@@ -7,6 +7,7 @@ namespace UneContIntegrationsTools.Features.Integracoes;
 /// </summary>
 public interface IFilaIntegracaoView
 {
+    TipoServicoFilaIntegracao TipoServico { get; set; }
     int NumeroTentativaMinimo { get; set; }
     string BuscaIntegracao { get; set; }
 

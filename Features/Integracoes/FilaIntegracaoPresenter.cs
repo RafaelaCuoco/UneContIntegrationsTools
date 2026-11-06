@@ -43,6 +43,7 @@ public sealed class FilaIntegracaoPresenter
         }
 
         var filtro = new FilaIntegracaoFiltroDto(
+            TipoServico: _view.TipoServico,
             NumeroTentativaMinimo: _view.NumeroTentativaMinimo,
             BuscaIntegracao: _view.BuscaIntegracao);
 
@@ -57,7 +58,10 @@ public sealed class FilaIntegracaoPresenter
 
         try
         {
-            _view.SetBusyState(true, "Consultando fila de integração no SQL Server...");
+            var tipoLabel = filtro.TipoServico == TipoServicoFilaIntegracao.ServicoPrestado
+                ? "Serviços Prestados"
+                : "Serviços Tomados";
+            _view.SetBusyState(true, $"Consultando fila de integração ({tipoLabel}) no SQL Server...");
             var resumo = await _service.ConsultarFilaAsync(filtro);
             _view.DisplayResult(resumo);
         }

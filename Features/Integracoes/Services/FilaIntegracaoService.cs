@@ -14,7 +14,7 @@ public sealed class FilaIntegracaoService(
     ISqlConnectionFactory connectionFactory,
     ILogger<FilaIntegracaoService> logger) : IFilaIntegracaoService
 {
-    private const string BaseQuerySql = """
+    private const string ServicoTomadoQuerySql = """
         SELECT DISTINCT SEI.INTEGRACAO, COUNT(ST.ServicoTomadoId) AS QTDE_NOTAS
         FROM Parceiros.ParceiroEmpresa PE
         INNER JOIN NFe.ServicoTomado ST ON ST.ParceiroEmpresaId = PE.ParceiroEmpresaId
@@ -47,6 +47,39 @@ public sealed class FilaIntegracaoService(
         ORDER BY COUNT(ST.ServicoTomadoId) DESC;
         """;
 
+    private const string ServicoPrestadoQuerySql = """
+        SELECT DISTINCT SEI.INTEGRACAO, COUNT(SP.ServicoPrestadoId) AS QTDE_NOTAS
+        FROM Parceiros.ParceiroEmpresa PE
+        INNER JOIN NFe.ServicoPrestado SP ON SP.ParceiroEmpresaId = PE.ParceiroEmpresaId
+        INNER JOIN Parceiros.ParceiroEmpresaConfiguracaoIntegracao PECI ON PECI.ParceiroEmpresaId = PE.ParceiroEmpresaID
+        INNER JOIN (
+            SELECT DISTINCT SistemaIntegracaoId,
+                (CASE WHEN SistemaIntegracaoId = 0  THEN 'NAO INFORMADO'
+                      WHEN SistemaIntegracaoId = 1  THEN 'Vianuvem'
+                      WHEN SistemaIntegracaoId = 2  THEN 'SCIWeb'
+                      WHEN SistemaIntegracaoId = 3  THEN 'WebHook'
+                      WHEN SistemaIntegracaoId = 4  THEN 'UneCont'
+                      WHEN SistemaIntegracaoId = 5  THEN 'NetSuiteActive'
+                      WHEN SistemaIntegracaoId = 6  THEN 'Email'
+                      WHEN SistemaIntegracaoId = 7  THEN 'Talkcom'
+                      WHEN SistemaIntegracaoId = 8  THEN 'Omie'
+                      WHEN SistemaIntegracaoId = 9  THEN 'SFTP'
+                      WHEN SistemaIntegracaoId = 10 THEN 'Holmes'
+                      WHEN SistemaIntegracaoId = 11 THEN 'WebHookUneCont'
+                      WHEN SistemaIntegracaoId = 12 THEN 'RMWalm'
+                      WHEN SistemaIntegracaoId = 13 THEN 'Questor'
+                      WHEN SistemaIntegracaoId = 14 THEN 'Dominio'
+                      WHEN SistemaIntegracaoId = 15 THEN 'WKRadar'
+                      WHEN SistemaIntegracaoId = 16 THEN 'RM Hausen'
+                      ELSE NULL END) AS INTEGRACAO
+            FROM Parceiros.ParceiroEmpresaConfiguracaoIntegracao
+        ) AS SEI ON SEI.SistemaIntegracaoId = PECI.SistemaIntegracaoId
+        INNER JOIN NFe.FilaIntegracaoSistema FILA ON FILA.IdNota = SP.ServicoPrestadoId
+        WHERE FILA.NumeroTentativa >= @NumeroTentativaMinimo
+        GROUP BY SEI.INTEGRACAO
+        ORDER BY COUNT(SP.ServicoPrestadoId) DESC;
+        """;
+
     public async Task<FilaIntegracaoResumoDto> ConsultarFilaAsync(
         FilaIntegracaoFiltroDto filtro,
         CancellationToken cancellationToken = default)
@@ -55,14 +88,22 @@ public sealed class FilaIntegracaoService(
 
         var stopwatch = Stopwatch.StartNew();
 
+        var querySql = filtro.TipoServico switch
+        {
+            TipoServicoFilaIntegracao.ServicoTomado => ServicoTomadoQuerySql,
+            TipoServicoFilaIntegracao.ServicoPrestado => ServicoPrestadoQuerySql,
+            _ => throw new ArgumentOutOfRangeException(nameof(filtro), filtro.TipoServico, "Tipo de serviço não suportado.")
+        };
+
         logger.LogInformation(
-            "Iniciando consulta da Fila de Integração (NumeroTentativa >= {NumeroTentativaMinimo}, Busca: '{Busca}').",
+            "Iniciando consulta da Fila de Integração (TipoServico: {TipoServico}, NumeroTentativa >= {NumeroTentativaMinimo}, Busca: '{Busca}').",
+            filtro.TipoServico,
             filtro.NumeroTentativaMinimo,
             filtro.BuscaIntegracao ?? string.Empty);
 
         await using var connection = await connectionFactory.CreateOpenConnectionAsync(cancellationToken);
         await using var command = connection.CreateCommand();
-        command.CommandText = BaseQuerySql;
+        command.CommandText = querySql;
         command.CommandTimeout = connectionFactory.CurrentSettings?.ConnectionTimeoutSeconds ?? 60;
         command.Parameters.Add(new SqlParameter("@NumeroTentativaMinimo", SqlDbType.Int)
         {
@@ -95,12 +136,14 @@ public sealed class FilaIntegracaoService(
         var totalNotas = items.Sum(i => (long)i.QuantidadeNotas);
 
         logger.LogInformation(
-            "Consulta da Fila de Integração concluída em {ElapsedMs} ms. Sistemas retornados: {Count}, Total de notas: {TotalNotas}.",
+            "Consulta da Fila de Integração ({TipoServico}) concluída em {ElapsedMs} ms. Sistemas retornados: {Count}, Total de notas: {TotalNotas}.",
+            filtro.TipoServico,
             stopwatch.ElapsedMilliseconds,
             items.Count,
             totalNotas);
 
         return new FilaIntegracaoResumoDto(
+            TipoServico: filtro.TipoServico,
             Itens: items,
             TotalSistemas: items.Count,
             TotalNotas: totalNotas,
