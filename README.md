@@ -16,7 +16,7 @@ Toda implementação ou manutenção neste repositório deve respeitar as seguin
 1. **C# e .NET 10**: Utilize recursos modernos da linguagem (Primary Constructors, Records, Pattern Matching, Collection Expressions, Nullable Reference Types habilitados).
 2. **Injeção de Dependência Nativa**: Todo acoplamento de serviços, validadores, presenters e telas deve ser registrado via `Microsoft.Extensions.DependencyInjection` em [`ServiceCollectionExtensions.cs`](Infrastructure/DependencyInjection/ServiceCollectionExtensions.cs).
 3. **Padrão MVP (Model-View-Presenter)**: A interface gráfica (`UserControl` / `Form`) implementa apenas uma interface de View (ex.: `IMeuCenarioView`) e delega toda orquestração, validação e chamadas de negócio para um `Presenter`.
-4. **Componentização com `UserControl`**: Cada cenário funcional deve possuir seu próprio `UserControl` independente e reutilizável. **Nota importante (.NET 10 WinForms):** Propriedades públicas *read/write* em `UserControl` devem ser decoradas com `[DesignerSerializationVisibility(DesignerSerializationVisibility.Hidden)]` para evitar o erro `WFO1000`.
+4. **Componentização com `UserControl`**: Cada cenário funcional deve possuir seu próprio `UserControl` independente e reutilizável. **Nota importante (.NET 10 WinForms):** Propriedades públicas *read/write* em `UserControl` ou `Form` devem ser decoradas com `[DesignerSerializationVisibility(DesignerSerializationVisibility.Hidden)]` para evitar o erro `WFO1000` (veja os detalhes na [Seção 3.5](#35-por-que-decorar-propriedades-com-designerserializationvisibility-erro-wfo1000)).
 5. **Validação com FluentValidation**: Toda entrada de dados do usuário deve ser representada por um DTO/Model e validada através de uma classe que herda de `AbstractValidator<T>`.
 6. **Logs Estruturados com Serilog**: Eventos de execução, auditoria de alterações de integração e erros devem ser registrados via `ILogger<T>` (integrado ao **Serilog**), gravando logs diários em `%LocalAppData%\UneContIntegrationsTools\logs\`.
 7. **Responsividade Assíncrona (`async/await`)**: Todas as operações de I/O e banco de dados devem ser assíncronas (`Task`), bloqueando os botões da tela com feedback visual (`SetBusyState`) durante a execução para nunca travar a UI thread.
@@ -77,6 +77,14 @@ A arquitetura do projeto combina **Vertical Slice Architecture**, **MVP (Model-V
 - **`Switch Expressions` e Pattern Matching**: Despacho declarativo de modos de autenticação e configuração visual de controles.
 - **`await using` (`IAsyncDisposable`)**: Liberação assíncrona de conexões, comandos e leitores (`SqlConnection`, `SqlCommand`, `SqlDataReader`) sem bloquear a thread de UI.
 - **`System.Threading.Lock` (.NET 9/10)**: Primitiva moderna e otimizada de sincronização entre threads utilizada em [`SqlConnectionFactory.cs`](Infrastructure/Database/SqlConnectionFactory.cs).
+
+### 3.5. Por que decorar propriedades com `DesignerSerializationVisibility` (Erro `WFO1000`)?
+O diagnóstico **`WFO1000`** (*"Missing code serialization configuration for property content"*) foi introduzido nos analisadores do Windows Forms a partir do **.NET 9 / .NET 10** para aumentar a segurança e a previsibilidade do **WinForms Designer**:
+- **Causa**: Quando uma classe que herda de `Control`, `UserControl` ou `Form` expõe uma propriedade pública com `get` e `set`, o Designer do Windows Forms tenta, por padrão, serializar o valor dessa propriedade no arquivo `.Designer.cs`. Como o `.NET` moderno removeu mecanismos legados inseguros de serialização (como o `BinaryFormatter`), o compilador passou a exigir que o desenvolvedor declare explicitamente a política de serialização de cada propriedade pública *read/write*.
+- **Como resolver**:
+  - **`[DesignerSerializationVisibility(DesignerSerializationVisibility.Hidden)]`** *(Padrão neste projeto)*: Instrui o Designer a **ignorar** a propriedade e não gravá-la no `.Designer.cs`. Deve ser utilizado em todas as propriedades de contrato MVP (`I...View`), dados de tela, estados ou dependências configuradas em tempo de execução.
+  - **`[DesignerSerializationVisibility(DesignerSerializationVisibility.Visible)]`** ou **`[DefaultValue(...)]`**: Instrui o Designer a persistir o valor no `.Designer.cs`. Útil apenas para propriedades puramente visuais editáveis pela janela de Propriedades do Visual Studio.
+  - **`[DesignerSerializationVisibility(DesignerSerializationVisibility.Content)]`**: Instrui o Designer a serializar o conteúdo interno do objeto (como coleções expostas pelo controle).
 
 ---
 
