@@ -99,9 +99,8 @@ public partial class DatabaseConfigControl : UserControl, IDatabaseConfigView
         _cmbAuthMode.Items.AddRange(
         [
             new AuthModeOption(SqlAuthenticationMode.SqlServerPassword, "SQL Server (Usuário e Senha)"),
-            new AuthModeOption(SqlAuthenticationMode.MicrosoftEntraInteractive, "Microsoft Entra ID - Interativo (MFA / Navegador)"),
-            new AuthModeOption(SqlAuthenticationMode.MicrosoftEntraPassword, "Microsoft Entra ID - Usuário e Senha"),
-            new AuthModeOption(SqlAuthenticationMode.MicrosoftEntraDefault, "Microsoft Entra ID - Integrado / Default")
+            new AuthModeOption(SqlAuthenticationMode.MicrosoftEntraInteractive, "Azure / Microsoft Entra ID - Interativo (MFA / Navegador)"),
+            new AuthModeOption(SqlAuthenticationMode.MicrosoftEntraDefault, "Azure / Microsoft Entra ID - Integrado / Default")
         ]);
         _cmbAuthMode.DisplayMember = nameof(AuthModeOption.DisplayText);
         _cmbAuthMode.SelectedIndex = 0;
@@ -137,13 +136,15 @@ public partial class DatabaseConfigControl : UserControl, IDatabaseConfigView
     private void OnAuthModeChanged(object? sender, EventArgs e)
     {
         var mode = AuthenticationMode;
-        var requiresPassword = mode is SqlAuthenticationMode.SqlServerPassword or SqlAuthenticationMode.MicrosoftEntraPassword;
+        var requiresPassword = mode == SqlAuthenticationMode.SqlServerPassword;
 
         _txtPassword.Enabled = requiresPassword;
         _chkRememberPassword.Enabled = requiresPassword;
 
         if (!requiresPassword)
         {
+            _txtPassword.Text = string.Empty;
+            _chkRememberPassword.Checked = false;
             _errorProvider.SetError(_txtPassword, string.Empty);
         }
 
@@ -151,7 +152,6 @@ public partial class DatabaseConfigControl : UserControl, IDatabaseConfigView
         {
             SqlAuthenticationMode.SqlServerPassword => "Usuário SQL:",
             SqlAuthenticationMode.MicrosoftEntraInteractive => "E-mail Entra (Opcional):",
-            SqlAuthenticationMode.MicrosoftEntraPassword => "E-mail / Usuário Entra:",
             SqlAuthenticationMode.MicrosoftEntraDefault => "ClientId / Usuário (Opcional):",
             _ => "Usuário:"
         };
@@ -160,7 +160,6 @@ public partial class DatabaseConfigControl : UserControl, IDatabaseConfigView
         {
             SqlAuthenticationMode.SqlServerPassword => "Ex.: sa ou usr_integracao",
             SqlAuthenticationMode.MicrosoftEntraInteractive => "Opcional: seu.email@dominio.com.br (pré-seleciona a conta no MFA)",
-            SqlAuthenticationMode.MicrosoftEntraPassword => "Ex.: seu.email@dominio.com.br",
             SqlAuthenticationMode.MicrosoftEntraDefault => "Deixe em branco para credencial padrão do ambiente",
             _ => string.Empty
         };

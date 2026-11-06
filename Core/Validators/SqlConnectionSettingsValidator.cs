@@ -21,13 +21,13 @@ public sealed class SqlConnectionSettingsValidator : AbstractValidator<SqlConnec
         RuleFor(x => x.ConnectionTimeoutSeconds)
             .InclusiveBetween(5, 300).WithMessage("O tempo limite de conexão deve estar entre 5 e 300 segundos.");
 
-        When(x => x.AuthenticationMode is SqlAuthenticationMode.SqlServerPassword or SqlAuthenticationMode.MicrosoftEntraPassword, () =>
+        When(x => x.AuthenticationMode == SqlAuthenticationMode.SqlServerPassword, () =>
         {
             RuleFor(x => x.Username)
-                .NotEmpty().WithMessage("O usuário é obrigatório para o modo de autenticação selecionado.");
+                .NotEmpty().WithMessage("O usuário SQL é obrigatório para autenticação por usuário e senha.");
 
             RuleFor(x => x.Password)
-                .NotEmpty().WithMessage("A senha é obrigatória para o modo de autenticação selecionado.");
+                .NotEmpty().WithMessage("A senha é obrigatória para autenticação por usuário e senha.");
         });
     }
 }

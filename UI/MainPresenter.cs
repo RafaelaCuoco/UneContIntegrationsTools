@@ -104,9 +104,8 @@ public sealed class MainPresenter
         var authLabel = settings.AuthenticationMode switch
         {
             SqlAuthenticationMode.SqlServerPassword => $"SQL Login ({settings.Username})",
-            SqlAuthenticationMode.MicrosoftEntraInteractive => "Microsoft Entra ID (Interativo / MFA)",
-            SqlAuthenticationMode.MicrosoftEntraPassword => $"Microsoft Entra ID ({settings.Username})",
-            SqlAuthenticationMode.MicrosoftEntraDefault => "Microsoft Entra ID (Default / Integrado)",
+            SqlAuthenticationMode.MicrosoftEntraInteractive => "Azure / Microsoft Entra ID (Interativo / MFA)",
+            SqlAuthenticationMode.MicrosoftEntraDefault => "Azure / Microsoft Entra ID (Default / Integrado)",
             _ => settings.AuthenticationMode.ToString()
         };
 

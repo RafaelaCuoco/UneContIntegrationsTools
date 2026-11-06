@@ -90,11 +90,15 @@ public sealed class LocalConnectionSettingsStore(ILogger<LocalConnectionSettings
                 }
             }
 
+            var authMode = Enum.IsDefined(persisted.AuthenticationMode)
+                ? persisted.AuthenticationMode
+                : SqlAuthenticationMode.SqlServerPassword;
+
             return new SqlConnectionSettingsDto
             {
                 Server = persisted.Server,
                 Database = persisted.Database,
-                AuthenticationMode = persisted.AuthenticationMode,
+                AuthenticationMode = authMode,
                 Username = persisted.Username,
                 Password = decryptedPassword,
                 Encrypt = persisted.Encrypt,

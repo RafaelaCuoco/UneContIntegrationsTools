@@ -16,12 +16,7 @@ public enum SqlAuthenticationMode
     MicrosoftEntraInteractive = 1,
 
     /// <summary>
-    /// Microsoft Entra ID com Usuário e Senha (ActiveDirectoryPassword).
-    /// </summary>
-    MicrosoftEntraPassword = 2,
-
-    /// <summary>
-    /// Microsoft Entra ID Integrado / Default (credenciais do ambiente/Windows/Azure CLI).
+    /// Microsoft Entra ID Integrado / Default (credenciais do ambiente/Windows/Azure CLI/Managed Identity).
     /// </summary>
     MicrosoftEntraDefault = 3
 }

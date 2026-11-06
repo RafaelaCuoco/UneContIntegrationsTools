@@ -24,18 +24,15 @@ public sealed class SqlConnectionFactory(
 
     private static void EnsureEntraAuthenticationProvidersRegistered()
     {
-#pragma warning disable CS0618
         ReadOnlySpan<SqlAuthenticationMethod> entraMethods =
         [
             SqlAuthenticationMethod.ActiveDirectoryDefault,
-            SqlAuthenticationMethod.ActiveDirectoryInteractive,
-            SqlAuthenticationMethod.ActiveDirectoryPassword
+            SqlAuthenticationMethod.ActiveDirectoryInteractive
         ];
-#pragma warning restore CS0618
 
         ActiveDirectoryAuthenticationProvider? provider = null;
 
-        foreach (var method in entraMethods)
+        foreach (SqlAuthenticationMethod method in entraMethods)
         {
             if (SqlAuthenticationProvider.GetProvider(method) is null)
             {
@@ -89,54 +86,60 @@ public sealed class SqlConnectionFactory(
     {
         ArgumentNullException.ThrowIfNull(settings);
 
-        var builder = new SqlConnectionStringBuilder
+        return settings.AuthenticationMode switch
         {
-            DataSource = settings.Server.Trim(),
-            InitialCatalog = settings.Database.Trim(),
-            Encrypt = settings.Encrypt,
-            TrustServerCertificate = settings.TrustServerCertificate,
-            ConnectTimeout = settings.ConnectionTimeoutSeconds,
-            ApplicationName = "UneContIntegrationTools"
+            SqlAuthenticationMode.SqlServerPassword => BuildSqlServerPasswordConnectionString(settings),
+            SqlAuthenticationMode.MicrosoftEntraInteractive or SqlAuthenticationMode.MicrosoftEntraDefault => BuildAzureEntraConnectionString(settings),
+            _ => throw new ArgumentOutOfRangeException(nameof(settings), settings.AuthenticationMode, "Modo de autenticação não suportado.")
+        };
+    }
+
+    /// <summary>
+    /// Constrói a ConnectionString para comunicação direta com o SQL Server via Usuário e Senha (SQL Login).
+    /// </summary>
+    private static string BuildSqlServerPasswordConnectionString(SqlConnectionSettingsDto settings)
+    {
+        var builder = CreateBaseConnectionStringBuilder(settings);
+        builder.IntegratedSecurity = false;
+        builder.UserID = settings.Username?.Trim() ?? string.Empty;
+        builder.Password = settings.Password ?? string.Empty;
+
+        return builder.ConnectionString;
+    }
+
+    /// <summary>
+    /// Constrói a ConnectionString para comunicação autenticada via Azure / Microsoft Entra ID.
+    /// </summary>
+    private static string BuildAzureEntraConnectionString(SqlConnectionSettingsDto settings)
+    {
+        EnsureEntraAuthenticationProvidersRegistered();
+
+        var builder = CreateBaseConnectionStringBuilder(settings);
+        builder.IntegratedSecurity = false;
+        builder.Authentication = settings.AuthenticationMode switch
+        {
+            SqlAuthenticationMode.MicrosoftEntraInteractive => SqlAuthenticationMethod.ActiveDirectoryInteractive,
+            SqlAuthenticationMode.MicrosoftEntraDefault => SqlAuthenticationMethod.ActiveDirectoryDefault,
+            _ => throw new ArgumentOutOfRangeException(nameof(settings), settings.AuthenticationMode, "Modo de autenticação Azure / Entra ID inválido.")
         };
 
-        switch (settings.AuthenticationMode)
+        if (!string.IsNullOrWhiteSpace(settings.Username))
         {
-            case SqlAuthenticationMode.SqlServerPassword:
-                builder.IntegratedSecurity = false;
-                builder.UserID = settings.Username?.Trim() ?? string.Empty;
-                builder.Password = settings.Password ?? string.Empty;
-                break;
-
-            case SqlAuthenticationMode.MicrosoftEntraInteractive:
-                builder.Authentication = SqlAuthenticationMethod.ActiveDirectoryInteractive;
-                if (!string.IsNullOrWhiteSpace(settings.Username))
-                {
-                    builder.UserID = settings.Username.Trim();
-                }
-                break;
-
-            case SqlAuthenticationMode.MicrosoftEntraPassword:
-#pragma warning disable CS0618
-                builder.Authentication = SqlAuthenticationMethod.ActiveDirectoryPassword;
-#pragma warning restore CS0618
-                builder.UserID = settings.Username?.Trim() ?? string.Empty;
-                builder.Password = settings.Password ?? string.Empty;
-                break;
-
-            case SqlAuthenticationMode.MicrosoftEntraDefault:
-                builder.Authentication = SqlAuthenticationMethod.ActiveDirectoryDefault;
-                if (!string.IsNullOrWhiteSpace(settings.Username))
-                {
-                    builder.UserID = settings.Username.Trim();
-                }
-                break;
-
-            default:
-                throw new ArgumentOutOfRangeException(nameof(settings), settings.AuthenticationMode, "Modo de autenticação não suportado.");
+            builder.UserID = settings.Username.Trim();
         }
 
         return builder.ConnectionString;
     }
+
+    private static SqlConnectionStringBuilder CreateBaseConnectionStringBuilder(SqlConnectionSettingsDto settings) => new()
+    {
+        DataSource = settings.Server.Trim(),
+        InitialCatalog = settings.Database.Trim(),
+        Encrypt = settings.Encrypt,
+        TrustServerCertificate = settings.TrustServerCertificate,
+        ConnectTimeout = settings.ConnectionTimeoutSeconds,
+        ApplicationName = "UneContIntegrationTools"
+    };
 
     public Task<SqlConnection> CreateOpenConnectionAsync(CancellationToken cancellationToken = default)
     {
